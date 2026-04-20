@@ -70,6 +70,7 @@ func runPicker(
 	stdin io.Reader,
 ) error {
 	items := make([]string, 0, len(sessions)+1)
+	items = append(items, newSessionEntry)
 	for _, s := range sessions {
 		line := fmt.Sprintf("%-20s %-40s", s.Name, s.WorkingDir)
 		if s.Status == session.Dead {
@@ -77,7 +78,6 @@ func runPicker(
 		}
 		items = append(items, strings.TrimRight(line, " "))
 	}
-	items = append(items, newSessionEntry)
 
 	header := "ctrl-d: delete   enter: attach   esc: quit"
 	selected, err := selector.Select(items, "> ", header)

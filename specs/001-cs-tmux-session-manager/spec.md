@@ -35,18 +35,19 @@ A developer installs `cs` for the first time and runs `cs setup`. The command ch
 
 ### User Story 1 — Launch or Resume a Session (Priority: P1)
 
-A developer runs `cs` from any directory. They are presented with a fuzzy-searchable list of existing Claude sessions managed by `cs`. They pick one to attach to, or choose to create a new named session. No tmux knowledge is required.
+A developer runs `cs` from any directory. The default action is to create a new session — the picker opens with `[ + new session ]` pre-selected at the top so a single Enter creates a fresh session. Existing sessions are listed below for the user to switch to if needed. No tmux knowledge is required.
 
-**Why this priority**: This is the entire core value — frictionless discovery and resumption of Claude sessions without knowing tmux commands.
+**Why this priority**: This is the entire core value — frictionless creation and resumption of Claude sessions without knowing tmux commands. New session is the most common action and should require the least friction.
 
-**Independent Test**: Run `cs` with zero existing sessions, create a named one, verify it attaches to a running Claude process. Then detach and run `cs` again — verify the session appears and is selectable.
+**Independent Test**: Run `cs` with zero existing sessions, create a named one, verify it attaches to a running Claude process. Then detach and run `cs` again — verify new session is pre-selected and the prior session is listed below it.
 
 **Acceptance Scenarios**:
 
-1. **Given** no existing cs sessions, **When** the user runs `cs`, **Then** the tool presents an option to create a new session and prompts for a name.
-2. **Given** one or more existing cs sessions, **When** the user runs `cs`, **Then** a fuzzy-searchable picker lists all sessions (name + working directory) and the user can select one to attach.
-3. **Given** the user selects an existing session, **When** they confirm, **Then** they are attached to that tmux session exactly where they left off.
-4. **Given** the user chooses to create a new session and provides a name, **When** confirmed, **Then** a new tmux session is created in the cs socket directory and Claude starts inside it.
+1. **Given** no existing cs sessions, **When** the user runs `cs`, **Then** the tool skips the picker and prompts directly for a new session name.
+2. **Given** one or more existing cs sessions, **When** the user runs `cs`, **Then** a fuzzy-searchable picker opens with `[ + new session ]` as the first (pre-selected) entry, followed by existing sessions listed by name and working directory.
+3. **Given** the user presses Enter without navigating away from the default, **When** the picker confirms, **Then** the new-session flow begins and prompts for a name.
+4. **Given** the user navigates to an existing session in the picker and selects it, **When** they confirm, **Then** they are attached to that tmux session exactly where they left off.
+5. **Given** the user chooses to create a new session and provides a name, **When** confirmed, **Then** a new tmux session is created in the cs socket directory and Claude starts inside it.
 
 ---
 
@@ -94,7 +95,7 @@ A developer notices a dead or irrelevant Claude session in the list. From the pi
 
 - **FR-001**: The `cs` binary MUST be invokable from any macOS shell without arguments as the primary usage pattern.
 - **FR-002**: The tool MUST manage all its tmux sessions through a dedicated socket directory (e.g., `~/.cs/sockets/`) so they are fully isolated from the user's personal tmux sessions.
-- **FR-003**: The tool MUST display all cs-managed sessions in a fuzzy-searchable interactive picker; no manually created tmux sessions outside the cs socket are shown.
+- **FR-003**: When existing sessions are present, the tool MUST display a fuzzy-searchable interactive picker with `[ + new session ]` as the first pre-selected entry, followed by all cs-managed sessions; no manually created tmux sessions outside the cs socket are shown.
 - **FR-004**: Each session entry in the picker MUST show at minimum the session name and the working directory it was created from.
 - **FR-005**: The user MUST be able to attach to an existing session by selecting it in the picker.
 - **FR-006**: The user MUST be able to create a new session from the picker by providing a mandatory name; the tool MUST NOT proceed without one.
