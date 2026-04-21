@@ -4,25 +4,29 @@ import "github.com/dhruv/cs/internal/session"
 
 // FakeTmuxClient is a configurable test double for TmuxClient.
 type FakeTmuxClient struct {
-	Sessions        []session.Session
-	ListSessionsErr error
-	NewSessionErr   error
+	Sessions         []session.Session
+	ListSessionsErr  error
+	NewSessionErr    error
 	AttachSessionErr error
-	KillSessionErr  error
+	KillSessionErr   error
 	HasSessionResult bool
-	HasSessionErr   error
+	HasSessionErr    error
 
 	AttachedSession string
 	KilledSession   string
 	CreatedSession  string
+	CreatedModel    string
+	CreatedEffort   string
 }
 
 func (f *FakeTmuxClient) ListSessions(_ string) ([]session.Session, error) {
 	return f.Sessions, f.ListSessionsErr
 }
 
-func (f *FakeTmuxClient) NewSession(_, name, _ string) error {
+func (f *FakeTmuxClient) NewSession(_, name, _, model, effort string) error {
 	f.CreatedSession = name
+	f.CreatedModel = model
+	f.CreatedEffort = effort
 	return f.NewSessionErr
 }
 

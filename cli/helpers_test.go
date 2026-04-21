@@ -37,21 +37,11 @@ func TestPrintJSON_Valid(t *testing.T) {
 		{Name: "work", WorkingDir: "/tmp/work", Status: session.Active},
 		{Name: "old", WorkingDir: "/tmp/old", Status: session.Dead},
 	}
-	// Redirect stdout to capture output
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	old := os.Stdout
-	os.Stdout = w
-
-	serr := printJSON(sessions)
-	require.NoError(t, w.Close())
-	os.Stdout = old
-
 	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
-	out := buf.String()
+	serr := printJSON(&buf, sessions)
+	require.NoError(t, serr)
 
-	assert.NoError(t, serr)
+	out := buf.String()
 	assert.Contains(t, out, `"name":"work"`)
 	assert.Contains(t, out, `"status":"active"`)
 	assert.Contains(t, out, `"name":"old"`)
@@ -62,17 +52,8 @@ func TestPrintTable(t *testing.T) {
 	sessions := []session.Session{
 		{Name: "my-proj", WorkingDir: "/tmp/proj", Status: session.Active},
 	}
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	old := os.Stdout
-	os.Stdout = w
-
-	printTable(sessions)
-	require.NoError(t, w.Close())
-	os.Stdout = old
-
 	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+	printTable(&buf, sessions)
 	out := buf.String()
 
 	assert.True(t, strings.Contains(out, "my-proj"))

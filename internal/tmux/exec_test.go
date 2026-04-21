@@ -41,7 +41,7 @@ func TestExecTmuxClient_NewAndListSession(t *testing.T) {
 
 	c := &execTmuxClient{}
 
-	err := c.NewSession(socket, "test-session", os.TempDir())
+	err := c.NewSession(socket, "test-session", os.TempDir(), "sonnet", "medium")
 	require.NoError(t, err)
 
 	sessions, err := c.ListSessions(socket)
@@ -56,7 +56,7 @@ func TestExecTmuxClient_HasSession(t *testing.T) {
 
 	c := &execTmuxClient{}
 
-	err := c.NewSession(socket, "exists", os.TempDir())
+	err := c.NewSession(socket, "exists", os.TempDir(), "sonnet", "medium")
 	require.NoError(t, err)
 
 	found, err := c.HasSession(socket, "exists")
@@ -74,7 +74,7 @@ func TestExecTmuxClient_KillSession(t *testing.T) {
 
 	c := &execTmuxClient{}
 
-	err := c.NewSession(socket, "to-kill", os.TempDir())
+	err := c.NewSession(socket, "to-kill", os.TempDir(), "sonnet", "medium")
 	require.NoError(t, err)
 
 	err = c.KillSession(socket, "to-kill")
@@ -91,7 +91,7 @@ func TestExecTmuxClient_AttachSession_NoTTY(t *testing.T) {
 
 	c := &execTmuxClient{}
 
-	err := c.NewSession(socket, "attach-test", os.TempDir())
+	err := c.NewSession(socket, "attach-test", os.TempDir(), "sonnet", "medium")
 	require.NoError(t, err)
 
 	// AttachSession requires a real TTY — in CI this will fail, which is expected.
@@ -102,4 +102,35 @@ func TestExecTmuxClient_AttachSession_NoTTY(t *testing.T) {
 	require.NoError(t, herr)
 	assert.True(t, found)
 	_ = err
+}
+
+// T010: NewSession writes @cs-model and @cs-effort options; ListSessions reads them back.
+func TestExecTmuxClient_NewSession_SetsModelEffort(t *testing.T) {
+	socket := testSocketPath(t)
+	defer killTestServer(socket)
+
+	c := &execTmuxClient{}
+	err := c.NewSession(socket, "opt-test", os.TempDir(), "opus", "high")
+	require.NoError(t, err)
+
+	sessions, err := c.ListSessions(socket)
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	assert.Equal(t, "opus", sessions[0].Model)
+	assert.Equal(t, "high", sessions[0].Effort)
+}
+
+func TestExecTmuxClient_NewSession_EmptyModelEffort(t *testing.T) {
+	socket := testSocketPath(t)
+	defer killTestServer(socket)
+
+	c := &execTmuxClient{}
+	err := c.NewSession(socket, "empty-test", os.TempDir(), "", "")
+	require.NoError(t, err)
+
+	sessions, err := c.ListSessions(socket)
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	assert.Equal(t, "", sessions[0].Model)
+	assert.Equal(t, "", sessions[0].Effort)
 }

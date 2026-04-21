@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/urfave/cli/v3"
@@ -37,33 +38,35 @@ Environment:
 				return cli.Exit("", 2)
 			}
 			if cmd.Bool("json") {
-				return printJSON(sessions)
+				return printJSON(os.Stdout, sessions)
 			}
-			printTable(sessions)
+			printTable(os.Stdout, sessions)
 			return nil
 		},
 	}
 }
 
-func printTable(sessions []session.Session) {
-	fmt.Printf("%-20s %-40s %s\n", "NAME", "WORKING DIR", "STATUS")
+func printTable(w io.Writer, sessions []session.Session) {
+	fmt.Fprintf(w, "%-20s %-28s %-12s %-7s %s\n", "NAME", "WORKING DIR", "MODEL", "EFFORT", "STATUS")
 	for _, s := range sessions {
-		fmt.Printf("%-20s %-40s %s\n", s.Name, s.WorkingDir, s.Status)
+		fmt.Fprintf(w, "%-20s %-28s %-12s %-7s %s\n", s.Name, s.WorkingDir, s.Model, s.Effort, s.Status)
 	}
 }
 
-func printJSON(sessions []session.Session) error {
+func printJSON(w io.Writer, sessions []session.Session) error {
 	for _, s := range sessions {
 		obj := map[string]string{
 			"name":        s.Name,
 			"working_dir": s.WorkingDir,
+			"model":       s.Model,
+			"effort":      s.Effort,
 			"status":      s.Status.String(),
 		}
 		b, err := json.Marshal(obj)
 		if err != nil {
 			return fmt.Errorf("json: %w", err)
 		}
-		fmt.Println(string(b))
+		fmt.Fprintln(w, string(b))
 	}
 	return nil
 }
