@@ -7,7 +7,7 @@ import "fmt"
 // The full interface is defined in internal/tmux to avoid import cycles.
 type Client interface {
 	ListSessions(socketPath string) ([]Session, error)
-	NewSession(socketPath, name, workingDir string) error
+	NewSession(socketPath, name, workingDir, model, effort string) error
 	AttachSession(socketPath, name string) error
 	KillSession(socketPath, name string) error
 	HasSession(socketPath, name string) (bool, error)
@@ -36,7 +36,7 @@ func (m *Manager) List(socketPath string) ([]Session, error) {
 }
 
 // NewSession creates a new session (or attaches if it already exists).
-func (m *Manager) NewSession(socketPath, name, workingDir string) error {
+func (m *Manager) NewSession(socketPath, name, workingDir, model, effort string) error {
 	if name == "" {
 		return fmt.Errorf("session name cannot be empty")
 	}
@@ -47,7 +47,7 @@ func (m *Manager) NewSession(socketPath, name, workingDir string) error {
 	if exists {
 		return m.client.AttachSession(socketPath, name)
 	}
-	if err := m.client.NewSession(socketPath, name, workingDir); err != nil {
+	if err := m.client.NewSession(socketPath, name, workingDir, model, effort); err != nil {
 		return err
 	}
 	return m.client.AttachSession(socketPath, name)

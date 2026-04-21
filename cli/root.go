@@ -2,10 +2,12 @@ package cli
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -19,6 +21,12 @@ const (
 	newSessionEntry = "[ + new session ]"
 	deletePrefix    = "__delete__:"
 )
+
+// knownModels is the ordered list of Claude model aliases presented in the picker.
+var knownModels = []string{"sonnet", "opus", "haiku", "sonnet[1m]", "opus[1m]"}
+
+// knownEfforts is the ordered list of effort levels presented in the picker.
+var knownEfforts = []string{"low", "medium", "high", "xhigh"}
 
 // RootAction is the default command — interactive session picker.
 func RootAction(client tmux.TmuxClient, selector fzf.FuzzySelector) cli.ActionFunc {
@@ -55,7 +63,7 @@ func runWithConfirmReader(
 	}
 
 	if len(sessions) == 0 {
-		return createNewSession(socketPath, client, stdin)
+		return createNewSession(socketPath, client, selector, stdin)
 	}
 
 	return runPicker(socketPath, client, selector, sessions, confirm, stdin)
@@ -72,7 +80,9 @@ func runPicker(
 	items := make([]string, 0, len(sessions)+1)
 	items = append(items, newSessionEntry)
 	for _, s := range sessions {
-		line := fmt.Sprintf("%-20s %-40s", s.Name, s.WorkingDir)
+		model := cmp.Or(s.Model, "unknown")
+		effort := cmp.Or(s.Effort, "unknown")
+		line := fmt.Sprintf("%-20s %-28s %-12s %-7s", s.Name, s.WorkingDir, model, effort)
 		if s.Status == session.Dead {
 			line += " [dead]"
 		}
@@ -94,7 +104,7 @@ func runPicker(
 	}
 
 	if selected == newSessionEntry {
-		return createNewSession(socketPath, client, stdin)
+		return createNewSession(socketPath, client, selector, stdin)
 	}
 
 	// Parse session name (first whitespace-delimited token)
@@ -102,7 +112,8 @@ func runPicker(
 	return client.AttachSession(socketPath, name)
 }
 
-func createNewSession(socketPath string, client tmux.TmuxClient, stdin io.Reader) error {
+// createNewSession prompts for a name, model, and effort, then creates the session.
+func createNewSession(socketPath string, client tmux.TmuxClient, selector fzf.FuzzySelector, stdin io.Reader) error {
 	scanner := bufio.NewScanner(stdin)
 	for {
 		fmt.Fprint(os.Stderr, "New session name: ")
@@ -114,9 +125,49 @@ func createNewSession(socketPath string, client tmux.TmuxClient, stdin io.Reader
 			fmt.Fprintln(os.Stderr, "Session name cannot be empty.")
 			continue
 		}
+		model, err := pickModel(selector)
+		if err != nil {
+			return nil // user cancelled during model selection
+		}
+		effort, err := pickEffort(selector)
+		if err != nil {
+			return nil // user cancelled during effort selection
+		}
 		mgr := session.NewManager(client)
-		return mgr.NewSession(socketPath, name, currentDir())
+		return mgr.NewSession(socketPath, name, currentDir(), model, effort)
 	}
+}
+
+// orderedWithDefault returns a copy of list with def moved to the front.
+// If def is already first or not found, the original slice is returned unchanged.
+func orderedWithDefault(list []string, def string) []string {
+	idx := slices.Index(list, def)
+	if idx <= 0 {
+		return list
+	}
+	result := slices.Clone(list)
+	result = slices.Delete(result, idx, idx+1)
+	return slices.Insert(result, 0, def)
+}
+
+func pickModel(selector fzf.FuzzySelector) (string, error) {
+	def := cmp.Or(os.Getenv("ANTHROPIC_MODEL"), "sonnet")
+	items := orderedWithDefault(knownModels, def)
+	selected, err := selector.Select(items, "Model: ", "enter: select model")
+	if err != nil {
+		return "", err
+	}
+	return cmp.Or(selected, def), nil
+}
+
+func pickEffort(selector fzf.FuzzySelector) (string, error) {
+	def := cmp.Or(os.Getenv("CLAUDE_CODE_EFFORT_LEVEL"), "medium")
+	items := orderedWithDefault(knownEfforts, def)
+	selected, err := selector.Select(items, "Effort: ", "enter: select effort level")
+	if err != nil {
+		return "", err
+	}
+	return cmp.Or(selected, def), nil
 }
 
 func handleDelete(socketPath string, client tmux.TmuxClient, selected string, confirm func(string) bool) error {

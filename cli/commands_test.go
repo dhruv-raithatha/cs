@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,4 +118,41 @@ func TestExpandHome_Exported(t *testing.T) {
 	result := ExpandHome("~/test")
 	assert.NotEqual(t, "~/test", result)
 	assert.Contains(t, result, "/test")
+}
+
+// T018: printTable includes MODEL and EFFORT columns; printJSON includes "model" and "effort" keys.
+
+func TestPrintTable_IncludesModelEffortColumns(t *testing.T) {
+	sessions := []session.Session{
+		{Name: "work", WorkingDir: "/tmp", Model: "opus", Effort: "high", Status: session.Active},
+		{Name: "old", WorkingDir: "/tmp2", Model: "", Effort: "", Status: session.Dead},
+	}
+	var buf strings.Builder
+	printTable(&buf, sessions)
+
+	out := buf.String()
+	assert.Contains(t, out, "MODEL")
+	assert.Contains(t, out, "EFFORT")
+	assert.Contains(t, out, "opus")
+	assert.Contains(t, out, "high")
+	// Pre-existing sessions with no model/effort show empty string (not "unknown") in cs list
+	assert.NotContains(t, out, "unknown")
+}
+
+func TestPrintJSON_IncludesModelEffortKeys(t *testing.T) {
+	sessions := []session.Session{
+		{Name: "work", WorkingDir: "/tmp", Model: "opus", Effort: "high", Status: session.Active},
+		{Name: "old", WorkingDir: "/tmp2", Model: "", Effort: "", Status: session.Dead},
+	}
+	var buf strings.Builder
+	err := printJSON(&buf, sessions)
+	require.NoError(t, err)
+
+	out := buf.String()
+	// Session with values
+	assert.Contains(t, out, `"model":"opus"`)
+	assert.Contains(t, out, `"effort":"high"`)
+	// Pre-existing session — model and effort keys present as empty string
+	assert.Contains(t, out, `"model":""`)
+	assert.Contains(t, out, `"effort":""`)
 }

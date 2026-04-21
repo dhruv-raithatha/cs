@@ -22,13 +22,17 @@ type fakeClient struct {
 	attachedSession string
 	killedSession   string
 	createdSession  string
+	createdModel    string
+	createdEffort   string
 }
 
 func (f *fakeClient) ListSessions(_ string) ([]Session, error) {
 	return f.sessions, f.listErr
 }
-func (f *fakeClient) NewSession(_, name, _ string) error {
+func (f *fakeClient) NewSession(_, name, _, model, effort string) error {
 	f.createdSession = name
+	f.createdModel = model
+	f.createdEffort = effort
 	return f.newSessionErr
 }
 func (f *fakeClient) AttachSession(_, name string) error {
@@ -87,14 +91,14 @@ func TestSessionManager_List_Error(t *testing.T) {
 func TestSessionManager_NewSession_EmptyName(t *testing.T) {
 	client := &fakeClient{}
 	m := NewManager(client)
-	err := m.NewSession("fake.sock", "", "/tmp")
+	err := m.NewSession("fake.sock", "", "/tmp", "", "")
 	assert.Error(t, err)
 }
 
 func TestSessionManager_NewSession_AlreadyExists(t *testing.T) {
 	client := &fakeClient{hasSessionValue: true}
 	m := NewManager(client)
-	err := m.NewSession("fake.sock", "existing", "/tmp")
+	err := m.NewSession("fake.sock", "existing", "/tmp", "", "")
 	require.NoError(t, err)
 	assert.Equal(t, "existing", client.attachedSession)
 	assert.Empty(t, client.createdSession)
@@ -103,10 +107,34 @@ func TestSessionManager_NewSession_AlreadyExists(t *testing.T) {
 func TestSessionManager_NewSession_Creates(t *testing.T) {
 	client := &fakeClient{hasSessionValue: false}
 	m := NewManager(client)
-	err := m.NewSession("fake.sock", "new-session", "/tmp")
+	err := m.NewSession("fake.sock", "new-session", "/tmp", "", "")
 	require.NoError(t, err)
 	assert.Equal(t, "new-session", client.createdSession)
 	assert.Equal(t, "new-session", client.attachedSession)
+}
+
+// T006: Manager.NewSession forwards model and effort to the underlying client.
+func TestSessionManager_NewSession_ForwardsModelEffort(t *testing.T) {
+	tests := []struct {
+		name   string
+		model  string
+		effort string
+	}{
+		{"opus and high", "opus", "high"},
+		{"haiku and low", "haiku", "low"},
+		{"empty strings", "", ""},
+		{"model only", "sonnet", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &fakeClient{}
+			m := NewManager(client)
+			err := m.NewSession("fake.sock", "sess", "/tmp", tt.model, tt.effort)
+			require.NoError(t, err)
+			assert.Equal(t, tt.model, client.createdModel)
+			assert.Equal(t, tt.effort, client.createdEffort)
+		})
+	}
 }
 
 func TestSessionManager_Kill_Success(t *testing.T) {

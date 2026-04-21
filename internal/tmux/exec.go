@@ -16,41 +16,60 @@ func NewExecTmuxClient() TmuxClient {
 	return &execTmuxClient{}
 }
 
+// parseSessionLine parses one line from the 5-part list-sessions format.
+// Format: name:workingDir:paneCommand:@cs-model:@cs-effort
+func parseSessionLine(line string) (session.Session, bool) {
+	parts := strings.SplitN(line, ":", 5)
+	if len(parts) != 5 {
+		return session.Session{}, false
+	}
+	s := session.Session{
+		Name:        parts[0],
+		WorkingDir:  parts[1],
+		PaneCommand: parts[2],
+		Model:       parts[3],
+		Effort:      parts[4],
+	}
+	s.Status = deriveStatus(s.PaneCommand)
+	return s, true
+}
+
 func (c *execTmuxClient) ListSessions(socketPath string) ([]session.Session, error) {
-	// Format: name:workingDir:paneCommand
-	out, err := runTmux(socketPath, "list-sessions", "-F", "#{session_name}:#{session_path}:#{pane_current_command}")
+	out, err := runTmux(socketPath, "list-sessions", "-F",
+		"#{session_name}:#{session_path}:#{pane_current_command}:#{@cs-model}:#{@cs-effort}")
 	if err != nil {
-		// tmux exits non-zero when there are no sessions
 		if strings.Contains(err.Error(), "no server running") || strings.Contains(out, "no server running") {
 			return nil, nil
 		}
 		return nil, nil //nolint:nilerr // empty session list is not an error
 	}
-	lines := strings.Split(strings.TrimSpace(out), "\n")
 	var sessions []session.Session
-	for _, line := range lines {
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, ":", 3)
-		if len(parts) != 3 {
+		s, ok := parseSessionLine(line)
+		if !ok {
 			continue
 		}
-		s := session.Session{
-			Name:        parts[0],
-			WorkingDir:  parts[1],
-			PaneCommand: parts[2],
-		}
-		s.Status = deriveStatus(s.PaneCommand)
 		sessions = append(sessions, s)
 	}
 	return sessions, nil
 }
 
-func (c *execTmuxClient) NewSession(socketPath, name, workingDir string) error {
-	_, err := runTmux(socketPath, "new-session", "-d", "-s", name, "-c", workingDir, "claude")
+func (c *execTmuxClient) NewSession(socketPath, name, workingDir, model, effort string) error {
+	_, err := runTmux(socketPath, "new-session", "-d", "-s", name, "-c", workingDir,
+		"-e", "ANTHROPIC_MODEL="+model,
+		"-e", "CLAUDE_CODE_EFFORT_LEVEL="+effort,
+		"claude")
 	if err != nil {
 		return fmt.Errorf("new-session %q: %w", name, err)
+	}
+	if _, err := runTmux(socketPath, "set-option", "-t", name, "@cs-model", model); err != nil {
+		return fmt.Errorf("set-option @cs-model %q: %w", name, err)
+	}
+	if _, err := runTmux(socketPath, "set-option", "-t", name, "@cs-effort", effort); err != nil {
+		return fmt.Errorf("set-option @cs-effort %q: %w", name, err)
 	}
 	return nil
 }
@@ -78,7 +97,15 @@ func (c *execTmuxClient) HasSession(socketPath, name string) (bool, error) {
 	return true, nil
 }
 
+// tmuxRunner is the function used to execute tmux subcommands.
+// Replaced in unit tests to avoid requiring a real tmux binary.
+var tmuxRunner = defaultTmuxRunner
+
 func runTmux(socketPath string, args ...string) (string, error) {
+	return tmuxRunner(socketPath, args...)
+}
+
+func defaultTmuxRunner(socketPath string, args ...string) (string, error) {
 	base := []string{"-S", socketPath}
 	cmd := exec.Command("tmux", append(base, args...)...)
 	out, err := cmd.CombinedOutput()
@@ -88,7 +115,15 @@ func runTmux(socketPath string, args ...string) (string, error) {
 	return string(out), nil
 }
 
+// interactiveRunner is the function used to attach interactively to a tmux session.
+// Replaced in unit tests to avoid requiring a real TTY.
+var interactiveRunner = defaultInteractiveRunner
+
 func runInteractive(socketPath, name string) error {
+	return interactiveRunner(socketPath, name)
+}
+
+func defaultInteractiveRunner(socketPath, name string) error {
 	cmd := exec.Command("tmux", "-S", socketPath, "attach-session", "-t", name)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
