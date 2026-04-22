@@ -99,6 +99,54 @@ instantly without losing your place.
 
 ---
 
+## Optional: Enhanced tmux Configuration
+
+`cs` works with any tmux setup, but since every session runs inside tmux, a
+well-tuned config makes a real difference — especially for multi-session,
+multi-pane Claude Code workflows.
+
+A ready-to-use config lives in [`dotfiles/tmux.conf`](dotfiles/tmux.conf). It
+addresses three specific pain points that come up when using `cs` heavily:
+
+| Pain point | What the config does |
+|---|---|
+| Shift+Enter doesn't work inside tmux | `extended-keys on` passes the key through to Claude Code |
+| Sessions lost after reboot or crash | `tmux-resurrect` + `tmux-continuum` auto-save and restore |
+| Switching between many cs sessions is slow | Mouse click on status bar, `C-a Tab` for last window, `C-a S` to browse |
+
+**Install:**
+
+```bash
+# 1. Copy the config
+cp dotfiles/tmux.conf ~/.tmux.conf
+
+# 2. Install TPM (plugin manager)
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+
+# 3. Reload config (inside tmux)
+tmux source ~/.tmux.conf
+
+# 4. Install plugins (inside tmux)
+# Press: C-a I
+```
+
+**Key shortcuts added:**
+
+| Key | Action |
+|-----|--------|
+| `C-a a` | Open Claude in a popup (closes when done) |
+| `C-a A` | Open Claude in a new persistent window |
+| `C-a W` | Side-by-side: editor left, Claude right |
+| `C-a \|` / `C-a -` | Vertical / horizontal split (opens in same dir) |
+| `C-a h/j/k/l` | Move between panes (vim-style) |
+| `C-a Tab` | Jump to last active window |
+| `C-a g` | Floating shell popup |
+| Right-click pane | Context menu: zoom / split / kill |
+
+The config is self-contained with inline comments — feel free to adapt it.
+
+---
+
 ## Platform Support
 
 | Platform | Status |
