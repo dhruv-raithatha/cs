@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/dhruv/cs/internal/session"
@@ -16,19 +17,21 @@ func NewExecTmuxClient() TmuxClient {
 	return &execTmuxClient{}
 }
 
-// parseSessionLine parses one line from the 5-part list-sessions format.
-// Format: name:workingDir:paneCommand:@cs-model:@cs-effort
+// parseSessionLine parses one line from the 6-part list-sessions format.
+// Format: name:workingDir:paneCommand:@cs-model:@cs-effort:session_created
 func parseSessionLine(line string) (session.Session, bool) {
-	parts := strings.SplitN(line, ":", 5)
-	if len(parts) != 5 {
+	parts := strings.SplitN(line, ":", 6)
+	if len(parts) != 6 {
 		return session.Session{}, false
 	}
+	createdAt, _ := strconv.ParseInt(parts[5], 10, 64)
 	s := session.Session{
 		Name:        parts[0],
 		WorkingDir:  parts[1],
 		PaneCommand: parts[2],
 		Model:       parts[3],
 		Effort:      parts[4],
+		CreatedAt:   createdAt,
 	}
 	s.Status = deriveStatus(s.PaneCommand)
 	return s, true
@@ -36,7 +39,7 @@ func parseSessionLine(line string) (session.Session, bool) {
 
 func (c *execTmuxClient) ListSessions(socketPath string) ([]session.Session, error) {
 	out, err := runTmux(socketPath, "list-sessions", "-F",
-		"#{session_name}:#{session_path}:#{pane_current_command}:#{@cs-model}:#{@cs-effort}")
+		"#{session_name}:#{pane_current_path}:#{pane_current_command}:#{@cs-model}:#{@cs-effort}:#{session_created}")
 	if err != nil {
 		if strings.Contains(err.Error(), "no server running") || strings.Contains(out, "no server running") {
 			return nil, nil
@@ -133,13 +136,11 @@ func defaultInteractiveRunner(socketPath, name string) error {
 
 func deriveStatus(paneCommand string) session.SessionStatus {
 	shells := map[string]bool{
-		"zsh": true, "bash": true, "sh": true, "fish": true, "dash": true,
-	}
-	if paneCommand == "claude" {
-		return session.Active
+		"zsh": true, "bash": true, "sh": true, "fish": true,
+		"dash": true, "tcsh": true, "csh": true, "ksh": true,
 	}
 	if shells[paneCommand] || paneCommand == "" {
 		return session.Dead
 	}
-	return session.Dead
+	return session.Active
 }

@@ -62,8 +62,12 @@ func (m *Manager) Kill(socketPath, name string) error {
 }
 
 func deriveStatus(paneCommand string) SessionStatus {
-	if paneCommand == "claude" {
-		return Active
+	shells := map[string]bool{
+		"zsh": true, "bash": true, "sh": true, "fish": true,
+		"dash": true, "tcsh": true, "csh": true, "ksh": true,
 	}
-	return Dead
+	if shells[paneCommand] || paneCommand == "" {
+		return Dead
+	}
+	return Active
 }

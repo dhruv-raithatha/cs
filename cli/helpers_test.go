@@ -53,7 +53,7 @@ func TestPrintTable(t *testing.T) {
 		{Name: "my-proj", WorkingDir: "/tmp/proj", Status: session.Active},
 	}
 	var buf bytes.Buffer
-	printTable(&buf, sessions)
+	printTable(&buf, sessions, false, false)
 	out := buf.String()
 
 	assert.True(t, strings.Contains(out, "my-proj"))

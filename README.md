@@ -23,9 +23,9 @@ No tmux knowledge required. One command to create, list, attach, or delete sessi
 $ cs
 
   > [ + new session ]
-    auth-redesign          ~/dev/myapp
-    write-release-notes    ~/dev/myapp
-    debug-api-timeout      ~/dev/myapp
+    auth-redesign          ~/dev/myapp   sonnet[1m]  medium  2h
+    write-release-notes    ~/dev/myapp   opus        high    1d
+    debug-api-timeout      ~/dev/myapp   sonnet[1m]  low     3h
 
   ctrl-d: delete   enter: attach   esc: quit
 ```
@@ -85,8 +85,10 @@ instantly without losing your place.
 |---------|-------------|
 | `cs` | Open session picker — create a new session or attach to an existing one |
 | `cs setup` | First-time setup: verify prerequisites, create `~/.cs` |
-| `cs list` | Print all sessions as a table (non-interactive) |
+| `cs list` | Print active sessions (name, current path, model, effort, age) |
+| `cs list --all` | Print all sessions including dead ones, with status indicator |
 | `cs list --json` | Print sessions as newline-delimited JSON |
+| `cs delete <name>` | Delete a session by name |
 | `cs --version` | Print version |
 
 **Keyboard shortcuts in the picker:**

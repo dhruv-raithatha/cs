@@ -67,8 +67,9 @@ func TestFakeTmuxClient_HasSession(t *testing.T) {
 
 func TestDeriveStatus(t *testing.T) {
 	assert.Equal(t, session.Active, deriveStatus("claude"))
+	assert.Equal(t, session.Active, deriveStatus("2.1.126")) // versioned claude binary
 	assert.Equal(t, session.Dead, deriveStatus("zsh"))
 	assert.Equal(t, session.Dead, deriveStatus("bash"))
 	assert.Equal(t, session.Dead, deriveStatus(""))
-	assert.Equal(t, session.Dead, deriveStatus("vim")) // non-shell, non-claude
+	assert.Equal(t, session.Active, deriveStatus("vim")) // running something — not dead
 }

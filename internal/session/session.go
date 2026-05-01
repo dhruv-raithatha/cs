@@ -30,4 +30,5 @@ type Session struct {
 	PaneCommand string
 	Model       string // Claude model alias; empty for pre-existing sessions
 	Effort      string // Effort level; empty for pre-existing sessions
+	CreatedAt   int64  // Unix timestamp from tmux session_created
 }

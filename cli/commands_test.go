@@ -128,7 +128,7 @@ func TestPrintTable_IncludesModelEffortColumns(t *testing.T) {
 		{Name: "old", WorkingDir: "/tmp2", Model: "", Effort: "", Status: session.Dead},
 	}
 	var buf strings.Builder
-	printTable(&buf, sessions)
+	printTable(&buf, sessions, true, false)
 
 	out := buf.String()
 	assert.Contains(t, out, "MODEL")
@@ -137,6 +137,33 @@ func TestPrintTable_IncludesModelEffortColumns(t *testing.T) {
 	assert.Contains(t, out, "high")
 	// Pre-existing sessions with no model/effort show empty string (not "unknown") in cs list
 	assert.NotContains(t, out, "unknown")
+}
+
+func TestPrintTable_HidesDeadByDefault(t *testing.T) {
+	sessions := []session.Session{
+		{Name: "active-sess", WorkingDir: "/tmp", Model: "opus", Effort: "high", Status: session.Active},
+		{Name: "dead-sess", WorkingDir: "/tmp2", Model: "sonnet", Effort: "low", Status: session.Dead},
+	}
+	var buf strings.Builder
+	printTable(&buf, sessions, false, false)
+
+	out := buf.String()
+	assert.Contains(t, out, "active-sess")
+	assert.NotContains(t, out, "dead-sess")
+}
+
+func TestPrintTable_ShowAllIncludesDead(t *testing.T) {
+	sessions := []session.Session{
+		{Name: "active-sess", WorkingDir: "/tmp", Model: "opus", Effort: "high", Status: session.Active},
+		{Name: "dead-sess", WorkingDir: "/tmp2", Model: "sonnet", Effort: "low", Status: session.Dead},
+	}
+	var buf strings.Builder
+	printTable(&buf, sessions, true, false)
+
+	out := buf.String()
+	assert.Contains(t, out, "active-sess")
+	assert.Contains(t, out, "dead-sess")
+	assert.Contains(t, out, "STATUS")
 }
 
 func TestPrintJSON_IncludesModelEffortKeys(t *testing.T) {

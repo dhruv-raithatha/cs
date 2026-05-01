@@ -22,7 +22,7 @@ func withFakeRunner(t *testing.T, fn func(socketPath string, args ...string) (st
 func TestExecTmuxClient_ListSessions_ParsesOutput(t *testing.T) {
 	withFakeRunner(t, func(_ string, args ...string) (string, error) {
 		if args[0] == "list-sessions" {
-			return "work:/home/dev:claude:opus:high\nold:/tmp:zsh::\n", nil
+			return "work:/home/dev:claude:opus:high:1776876938\nold:/tmp:zsh:::1776800000\n", nil
 		}
 		return "", nil
 	})
@@ -46,8 +46,8 @@ func TestExecTmuxClient_ListSessions_ParsesOutput(t *testing.T) {
 func TestExecTmuxClient_ListSessions_SkipsInvalidAndEmptyLines(t *testing.T) {
 	withFakeRunner(t, func(_ string, args ...string) (string, error) {
 		if args[0] == "list-sessions" {
-			// Include an empty line and a malformed 3-part line (old format)
-			return "good:/tmp:claude:sonnet:low\n\nbad-line\n", nil
+			// Include an empty line and a malformed line (old 5-part format)
+			return "good:/tmp:claude:sonnet:low:1776876938\n\nbad-line\n", nil
 		}
 		return "", nil
 	})
