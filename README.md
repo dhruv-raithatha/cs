@@ -1,4 +1,6 @@
-```
+# cs — your sessions, your focus
+
+```text
  ██████╗███████╗
 ██╔════╝██╔════╝
 ██║     ███████╗
@@ -7,10 +9,8 @@
  ╚═════╝╚══════╝
 ```
 
-# cs — your sessions, your focus.
-
 [![Go](https://img.shields.io/badge/go-1.26%2B-00ADD8?logo=go)](https://go.dev)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](#)
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
 ---
@@ -19,7 +19,7 @@
 specific context — `auth-redesign`, `write-release-notes`, `debug-api-timeout`.
 No tmux knowledge required. One command to create, list, attach, or delete sessions.
 
-```
+```text
 $ cs
 
   > [ + new session ]
@@ -45,14 +45,13 @@ brew install tmux fzf
 ```bash
 git clone https://github.com/dhruv/cs.git
 cd cs
-make build
-sudo mv cs /usr/local/bin/
+make install   # builds and copies to ~/.local/bin/cs
 ```
 
 **First run:**
 
 ```bash
-cs setup    # verify prerequisites, create ~/.cs
+cs setup    # verify prerequisites, update PATH, optionally copy tmux config
 cs          # open session picker — press Enter to create your first session
 ```
 
@@ -65,7 +64,7 @@ You name your sessions. Not Claude.
 When you run `cs`, you choose a name that represents what you're working on right now:
 
 | Session name | What you're doing |
-|---|---|
+| --- | --- |
 | `auth-redesign` | Reworking authentication on a feature branch |
 | `write-release-notes` | Drafting the changelog for the next release |
 | `debug-api-timeout` | Tracking down a flaky timeout in production |
@@ -82,9 +81,9 @@ instantly without losing your place.
 ## Usage
 
 | Command | Description |
-|---------|-------------|
+| --- | --- |
 | `cs` | Open session picker — create a new session or attach to an existing one |
-| `cs setup` | First-time setup: verify prerequisites, create `~/.cs` |
+| `cs setup` | First-time setup: install deps, update PATH, copy tmux config |
 | `cs list` | Print active sessions (name, current path, model, effort, age) |
 | `cs list --all` | Print all sessions including dead ones, with status indicator |
 | `cs list --json` | Print sessions as newline-delimited JSON |
@@ -94,7 +93,7 @@ instantly without losing your place.
 **Keyboard shortcuts in the picker:**
 
 | Key | Action |
-|-----|--------|
+| --- | --- |
 | `Enter` | Create new session (default) or attach to selected session |
 | `ctrl-d` | Delete the selected session |
 | `esc` | Quit without changes |
@@ -111,31 +110,26 @@ A ready-to-use config lives in [`dotfiles/tmux.conf`](dotfiles/tmux.conf). It
 addresses three specific pain points that come up when using `cs` heavily:
 
 | Pain point | What the config does |
-|---|---|
+| --- | --- |
 | Shift+Enter doesn't work inside tmux | `extended-keys on` passes the key through to Claude Code |
 | Sessions lost after reboot or crash | `tmux-resurrect` + `tmux-continuum` auto-save and restore |
 | Switching between many cs sessions is slow | Mouse click on status bar, `C-a Tab` for last window, `C-a S` to browse |
 
-**Install:**
+`cs setup` will offer to copy this config to `~/.tmux.conf` automatically.
+
+**Manual install:**
 
 ```bash
-# 1. Copy the config
 cp dotfiles/tmux.conf ~/.tmux.conf
-
-# 2. Install TPM (plugin manager)
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-
-# 3. Reload config (inside tmux)
-tmux source ~/.tmux.conf
-
-# 4. Install plugins (inside tmux)
-# Press: C-a I
+tmux source ~/.tmux.conf   # inside tmux
+# Press: C-a I             # install plugins
 ```
 
 **Key shortcuts added:**
 
 | Key | Action |
-|-----|--------|
+| --- | --- |
 | `C-a a` | Open Claude in a popup (closes when done) |
 | `C-a A` | Open Claude in a new persistent window |
 | `C-a W` | Side-by-side: editor left, Claude right |
@@ -149,21 +143,30 @@ The config is self-contained with inline comments — feel free to adapt it.
 
 ---
 
-## Platform Support
-
-| Platform | Status |
-|----------|--------|
-| macOS | ✅ Supported |
-| Linux | 🔜 Planned |
-| Windows | ❌ Not supported (tmux unavailable) |
-
----
-
 ## Contributing
+
+After cloning, install the git hooks to get tests and lint on every commit:
+
+```bash
+make hooks
+```
+
+The pre-commit hook runs `go test -race ./...`, `golangci-lint`, and `markdownlint-cli2`
+(via `npx`) on staged files.
 
 `cs` is a personal tool that happens to be open-source. Issues and pull requests are welcome —
 please open an issue first if you're planning a larger change so we can align before you invest
 the time.
+
+---
+
+## Platform Support
+
+| Platform | Status |
+| --- | --- |
+| macOS | Supported |
+| Linux | Planned |
+| Windows | Not supported (tmux unavailable) |
 
 ---
 

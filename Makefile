@@ -1,10 +1,21 @@
-BINARY = cs
-CMD = ./cmd/cs
+BINARY     = cs
+CMD        = ./cmd/cs
+INSTALL_DIR = $(HOME)/.local/bin
 
-.PHONY: build test test-integration lint coverage cross-compile
+.PHONY: build install test test-integration lint coverage cross-compile hooks
 
 build:
 	CGO_ENABLED=0 go build -o $(BINARY) $(CMD)
+
+install: build
+	@mkdir -p $(INSTALL_DIR)
+	@cp $(BINARY) $(INSTALL_DIR)/$(BINARY)
+	@echo "Installed $(BINARY) → $(INSTALL_DIR)/$(BINARY)"
+
+hooks:
+	@cp .githooks/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "Git hooks installed"
 
 test:
 	go test -race ./...

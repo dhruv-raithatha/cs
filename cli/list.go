@@ -75,12 +75,12 @@ func printTable(w io.Writer, sessions []session.Session, showAll bool, color boo
 	}
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	defer tw.Flush()
+	defer func() { _ = tw.Flush() }()
 
 	if showAll {
-		fmt.Fprintln(tw, "  NAME\tWORKING DIR\tMODEL\tEFFORT\tAGE\tSTATUS")
+		_, _ = fmt.Fprintln(tw, "  NAME\tWORKING DIR\tMODEL\tEFFORT\tAGE\tSTATUS")
 	} else {
-		fmt.Fprintln(tw, "NAME\tWORKING DIR\tMODEL\tEFFORT\tAGE")
+		_, _ = fmt.Fprintln(tw, "NAME\tWORKING DIR\tMODEL\tEFFORT\tAGE")
 	}
 
 	for _, s := range rows {
@@ -89,7 +89,7 @@ func printTable(w io.Writer, sessions []session.Session, showAll bool, color boo
 
 		if showAll {
 			dot, prefix, suffix := statusGlyph(s.Status, color)
-			fmt.Fprintf(tw, "%s %s%s\t%s\t%s\t%s\t%s\t%s%s\n",
+			_, _ = fmt.Fprintf(tw, "%s %s%s\t%s\t%s\t%s\t%s\t%s%s\n",
 				dot,
 				prefix, s.Name,
 				dir,
@@ -100,7 +100,7 @@ func printTable(w io.Writer, sessions []session.Session, showAll bool, color boo
 				suffix,
 			)
 		} else {
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
 				s.Name,
 				dir,
 				s.Model,
@@ -168,7 +168,7 @@ func printJSON(w io.Writer, sessions []session.Session) error {
 		if err != nil {
 			return fmt.Errorf("json: %w", err)
 		}
-		fmt.Fprintln(w, string(b))
+		_, _ = fmt.Fprintln(w, string(b))
 	}
 	return nil
 }

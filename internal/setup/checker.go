@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -80,4 +82,53 @@ func EnsureDataDir() error {
 		return fmt.Errorf("get home dir: %w", err)
 	}
 	return ensureDataDir(home + "/.local/share/cs")
+}
+
+// LocalBinPath returns the path to ~/.local/bin.
+func LocalBinPath() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "bin")
+}
+
+// CheckLocalBinOnPath returns whether ~/.local/bin is in PATH and, if not,
+// the detected shell rc file to update.
+func CheckLocalBinOnPath() (onPath bool, rcFile string) {
+	localBin := LocalBinPath()
+	if slices.Contains(filepath.SplitList(os.Getenv("PATH")), localBin) {
+		return true, ""
+	}
+	home, _ := os.UserHomeDir()
+	rc := filepath.Join(home, ".bashrc")
+	if strings.HasSuffix(os.Getenv("SHELL"), "zsh") {
+		rc = filepath.Join(home, ".zshrc")
+	}
+	return false, rc
+}
+
+// AppendToShellRC appends a line to the given shell rc file.
+func AppendToShellRC(rcFile, line string) error {
+	f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("open %s: %w", rcFile, err)
+	}
+	defer func() { _ = f.Close() }()
+	_, err = fmt.Fprintf(f, "\n%s\n", line)
+	return err
+}
+
+// TmuxConfExists reports whether ~/.tmux.conf already exists.
+func TmuxConfExists() bool {
+	home, _ := os.UserHomeDir()
+	_, err := os.Stat(filepath.Join(home, ".tmux.conf"))
+	return err == nil
+}
+
+// WriteTmuxConf writes content to ~/.tmux.conf.
+func WriteTmuxConf(content []byte) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("get home dir: %w", err)
+	}
+	dest := filepath.Join(home, ".tmux.conf")
+	return os.WriteFile(dest, content, 0o644)
 }

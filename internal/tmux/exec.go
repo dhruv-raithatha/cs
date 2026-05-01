@@ -18,7 +18,7 @@ func NewExecTmuxClient() TmuxClient {
 }
 
 // parseSessionLine parses one line from the 6-part list-sessions format.
-// Format: name:workingDir:paneCommand:@cs-model:@cs-effort:session_created
+// Format: name:workingDir:paneCommand:@cs-model:@cs-effort:session_created.
 func parseSessionLine(line string) (session.Session, bool) {
 	parts := strings.SplitN(line, ":", 6)
 	if len(parts) != 6 {
