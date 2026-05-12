@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tmux -S ~/.local/share/cs/cs.sock list-sessions -F \"#{session_name}:#{session_path}:#{pane_current_command}:#{@cs-model}:#{@cs-effort}:#{session_created}\")",
+      "Bash(bash *)"
+    ]
+  }
+}

@@ -18,12 +18,14 @@ type fakeClient struct {
 	killErr         error
 	hasSessionValue bool
 	hasSessionErr   error
+	setWindowErr    error
 
-	attachedSession string
-	killedSession   string
-	createdSession  string
-	createdModel    string
-	createdEffort   string
+	attachedSession      string
+	killedSession        string
+	createdSession       string
+	createdModel         string
+	createdEffort        string
+	setWindowOptionCalls []struct{ Session, Option, Value string }
 }
 
 func (f *fakeClient) ListSessions(_ string) ([]Session, error) {
@@ -45,6 +47,12 @@ func (f *fakeClient) KillSession(_, name string) error {
 }
 func (f *fakeClient) HasSession(_ string, _ string) (bool, error) {
 	return f.hasSessionValue, f.hasSessionErr
+}
+
+func (f *fakeClient) SetWindowOption(_ string, sessionName, option, value string) error {
+	f.setWindowOptionCalls = append(f.setWindowOptionCalls,
+		struct{ Session, Option, Value string }{sessionName, option, value})
+	return f.setWindowErr
 }
 
 func TestSessionManager_List_ActiveStatus(t *testing.T) {
@@ -150,4 +158,36 @@ func TestSessionManager_Kill_Error(t *testing.T) {
 	m := NewManager(client)
 	err := m.Kill("fake.sock", "ghost")
 	assert.Error(t, err)
+}
+
+func TestSessionManager_NewSession_SetsMonitorSilence_DefaultThreshold(t *testing.T) {
+	t.Setenv("CS_STALL_THRESHOLD", "") // ensure default
+	client := &fakeClient{hasSessionValue: false}
+	m := NewManager(client)
+	err := m.NewSession("fake.sock", "myapp", "/tmp", "", "")
+	require.NoError(t, err)
+	require.Len(t, client.setWindowOptionCalls, 1)
+	call := client.setWindowOptionCalls[0]
+	assert.Equal(t, "myapp", call.Session)
+	assert.Equal(t, "monitor-silence", call.Option)
+	assert.Equal(t, "180", call.Value)
+}
+
+func TestSessionManager_NewSession_SetsMonitorSilence_CustomThreshold(t *testing.T) {
+	t.Setenv("CS_STALL_THRESHOLD", "30")
+	client := &fakeClient{hasSessionValue: false}
+	m := NewManager(client)
+	err := m.NewSession("fake.sock", "myapp", "/tmp", "", "")
+	require.NoError(t, err)
+	require.Len(t, client.setWindowOptionCalls, 1)
+	assert.Equal(t, "30", client.setWindowOptionCalls[0].Value)
+}
+
+func TestSessionManager_NewSession_ExistingSession_NoMonitorSilence(t *testing.T) {
+	// When a session already exists, NewSession attaches only — no monitor-silence call.
+	client := &fakeClient{hasSessionValue: true}
+	m := NewManager(client)
+	err := m.NewSession("fake.sock", "existing", "/tmp", "", "")
+	require.NoError(t, err)
+	assert.Empty(t, client.setWindowOptionCalls)
 }

@@ -11,12 +11,14 @@ type FakeTmuxClient struct {
 	KillSessionErr   error
 	HasSessionResult bool
 	HasSessionErr    error
+	SetWindowErr     error
 
-	AttachedSession string
-	KilledSession   string
-	CreatedSession  string
-	CreatedModel    string
-	CreatedEffort   string
+	AttachedSession    string
+	KilledSession      string
+	CreatedSession     string
+	CreatedModel       string
+	CreatedEffort      string
+	SetWindowOptionCalls []struct{ Session, Option, Value string }
 }
 
 func (f *FakeTmuxClient) ListSessions(_ string) ([]session.Session, error) {
@@ -42,4 +44,10 @@ func (f *FakeTmuxClient) KillSession(_, name string) error {
 
 func (f *FakeTmuxClient) HasSession(_ string, _ string) (bool, error) {
 	return f.HasSessionResult, f.HasSessionErr
+}
+
+func (f *FakeTmuxClient) SetWindowOption(_ string, sessionName, option, value string) error {
+	f.SetWindowOptionCalls = append(f.SetWindowOptionCalls,
+		struct{ Session, Option, Value string }{sessionName, option, value})
+	return f.SetWindowErr
 }

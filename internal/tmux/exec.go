@@ -100,6 +100,14 @@ func (c *execTmuxClient) HasSession(socketPath, name string) (bool, error) {
 	return true, nil
 }
 
+func (c *execTmuxClient) SetWindowOption(socketPath, sessionName, option, value string) error {
+	_, err := runTmux(socketPath, "set-option", "-t", sessionName, option, value)
+	if err != nil {
+		return fmt.Errorf("set-option %s %q: %w", option, sessionName, err)
+	}
+	return nil
+}
+
 // tmuxRunner is the function used to execute tmux subcommands.
 // Replaced in unit tests to avoid requiring a real tmux binary.
 var tmuxRunner = defaultTmuxRunner

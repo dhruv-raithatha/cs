@@ -10,4 +10,5 @@ type TmuxClient interface {
 	AttachSession(socketPath, name string) error
 	KillSession(socketPath, name string) error
 	HasSession(socketPath, name string) (bool, error)
+	SetWindowOption(socketPath, session, option, value string) error
 }

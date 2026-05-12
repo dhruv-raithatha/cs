@@ -73,6 +73,7 @@ inspecting the live file). Claude Code expects hooks under the `"hooks"` key wit
 adds cs entries additively, preserving any user-defined entries.
 
 **Hook format verified from dotfiles reference implementation**:
+
 ```json
 {
   "hooks": {

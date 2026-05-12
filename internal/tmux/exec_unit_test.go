@@ -192,6 +192,44 @@ func TestExecTmuxClient_KillSession_Error(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestExecTmuxClient_SetWindowOption(t *testing.T) {
+	tests := []struct {
+		name    string
+		session string
+		option  string
+		value   string
+	}{
+		{"monitor-silence default", "my-session", "monitor-silence", "180"},
+		{"monitor-silence custom", "other-session", "monitor-silence", "30"},
+		{"arbitrary option", "s", "visual-bell", "off"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedArgs []string
+			withFakeRunner(t, func(_ string, args ...string) (string, error) {
+				capturedArgs = args
+				return "", nil
+			})
+			c := NewExecTmuxClient()
+			err := c.SetWindowOption("fake.sock", tt.session, tt.option, tt.value)
+			require.NoError(t, err)
+			assert.Equal(t,
+				[]string{"set-option", "-t", tt.session, tt.option, tt.value},
+				capturedArgs)
+		})
+	}
+}
+
+func TestExecTmuxClient_SetWindowOption_Error(t *testing.T) {
+	withFakeRunner(t, func(_ string, _ ...string) (string, error) {
+		return "", errors.New("tmux error")
+	})
+	c := NewExecTmuxClient()
+	err := c.SetWindowOption("fake.sock", "sess", "monitor-silence", "180")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "monitor-silence")
+}
+
 func withFakeInteractive(t *testing.T, fn func(socketPath, name string) error) {
 	t.Helper()
 	orig := interactiveRunner

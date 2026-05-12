@@ -1,7 +1,11 @@
 // Package session provides the SessionManager that orchestrates tmux session operations.
 package session
 
-import "fmt"
+import (
+	"cmp"
+	"fmt"
+	"os"
+)
 
 // Client is the subset of TmuxClient that SessionManager needs.
 // The full interface is defined in internal/tmux to avoid import cycles.
@@ -11,6 +15,7 @@ type Client interface {
 	AttachSession(socketPath, name string) error
 	KillSession(socketPath, name string) error
 	HasSession(socketPath, name string) (bool, error)
+	SetWindowOption(socketPath, session, option, value string) error
 }
 
 // Manager provides business logic over a tmux socket.
@@ -49,6 +54,10 @@ func (m *Manager) NewSession(socketPath, name, workingDir, model, effort string)
 	}
 	if err := m.client.NewSession(socketPath, name, workingDir, model, effort); err != nil {
 		return err
+	}
+	threshold := cmp.Or(os.Getenv("CS_STALL_THRESHOLD"), "180")
+	if err := m.client.SetWindowOption(socketPath, name, "monitor-silence", threshold); err != nil {
+		return fmt.Errorf("set monitor-silence %q: %w", name, err)
 	}
 	return m.client.AttachSession(socketPath, name)
 }

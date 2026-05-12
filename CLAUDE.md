@@ -18,10 +18,11 @@ make hooks       # installs .githooks/pre-commit into .git/hooks/
 | --- | --- |
 | `cmd/cs` | Entrypoint, wires dependencies |
 | `cli/` | Subcommand implementations (list, setup, attach, delete, root) |
+| `cli/assets/notify.sh` | Embedded Ghostty-native notify script (installed by `cs setup`) |
 | `internal/session` | `Session` type and `Manager` (list/create/kill logic) |
 | `internal/tmux` | Exec client: shells out to tmux, parses `list-sessions` output |
 | `internal/fzf` | Fuzzy selector wrapper |
-| `internal/setup` | Dependency checks, PATH management, tmux.conf helpers |
+| `internal/setup` | Dependency checks, PATH management, tmux.conf helpers, hook registration |
 
 ## Key Details
 
@@ -46,3 +47,7 @@ to add it to `~/.zshrc` or `~/.bashrc` based on `$SHELL`.
 
 Run `make hooks` after clone to install `.githooks/pre-commit`. It runs tests,
 golangci-lint, and markdownlint-cli2 (via npx) on staged files.
+
+<!-- SPECKIT START -->
+**Active feature plan**: `specs/004-session-interrupt-notify/plan.md`
+<!-- SPECKIT END -->
