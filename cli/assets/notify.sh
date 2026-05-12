@@ -130,6 +130,8 @@ if [[ -n "$EXECUTE_CMD" ]]; then
     NOTIFY_ARGS+=(-execute "$EXECUTE_CMD")
 fi
 
-terminal-notifier "${NOTIFY_ARGS[@]}"
+# Run terminal-notifier in the background so we never block the hook caller.
+# Redirect stdout/stderr to the log to suppress the notification ID output.
+terminal-notifier "${NOTIFY_ARGS[@]}" >>"$LOG_FILE" 2>&1 &
 log "$NOTIFICATION_TYPE in $CWD (session: $SESSION_ID) tmux=$TMUX_TARGET"
 exit 0

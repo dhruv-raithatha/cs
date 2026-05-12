@@ -11,6 +11,10 @@ install: build
 	@mkdir -p $(INSTALL_DIR)
 	@cp $(BINARY) $(INSTALL_DIR)/$(BINARY)
 	@echo "Installed $(BINARY) → $(INSTALL_DIR)/$(BINARY)"
+	@if [ -d "$(shell go env GOPATH)/bin" ] && [ -f "$(shell go env GOPATH)/bin/$(BINARY)" ]; then \
+		cp $(BINARY) "$(shell go env GOPATH)/bin/$(BINARY)"; \
+		echo "Updated  $(BINARY) → $(shell go env GOPATH)/bin/$(BINARY)"; \
+	fi
 
 hooks:
 	@cp .githooks/pre-commit .git/hooks/pre-commit

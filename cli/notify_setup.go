@@ -70,25 +70,26 @@ func registerNotifyHooks(scriptPath string) error {
 	return setup.WriteHookSettings(settingsPath, merged)
 }
 
-// fireTestNotification invokes the notify script with a test payload using jq.
+// fireTestNotification invokes the notify script with a test payload.
+// It runs in the background so cs setup never blocks waiting for notification
+// center delivery. The notification will appear momentarily after setup completes.
 func fireTestNotification(scriptPath string) error {
 	cwd, _ := os.Getwd()
 
 	// Build payload via jq to ensure correct JSON escaping.
 	payload, err := exec.Command("jq", "-n", //nolint:gosec
 		"--arg", "cwd", cwd,
-		`{"hook_event_name":"Notification","session_id":"cs-setup-test","cwd":$cwd,"message":"cs notifications active — cs setup is working","notification_type":"test"}`).
+		`{"hook_event_name":"Notification","session_id":"cs-setup-test","cwd":$cwd,"message":"cs notifications are working — click to open Ghostty","notification_type":"test"}`).
 		Output()
 	if err != nil {
-		// Fallback: build payload manually (jq not available).
 		payload = buildTestPayloadFallback(cwd)
 	}
 
+	// Start the notify script in the background; do not wait for it.
 	cmd := exec.Command("bash", scriptPath) //nolint:gosec
 	cmd.Stdin = strings.NewReader(strings.TrimSpace(string(payload)))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	// Discard stdout/stderr — terminal-notifier prints a notification ID we don't need.
+	return cmd.Start()
 }
 
 // buildTestPayloadFallback constructs a safe JSON test payload without jq.
