@@ -46,3 +46,22 @@ to add it to `~/.zshrc` or `~/.bashrc` based on `$SHELL`.
 
 Run `make hooks` after clone to install `.githooks/pre-commit`. It runs tests,
 golangci-lint, and markdownlint-cli2 (via npx) on staged files.
+
+## Claude Code Integration Notes
+
+**Model and effort — flags not env vars for effort** — `ANTHROPIC_MODEL` is passed as a
+tmux env var (`-e`) and works fine. But effort must use the `--effort <level>` CLI flag,
+not `CLAUDE_CODE_EFFORT_LEVEL`. When that env var is present in the process, Claude Code
+permanently blocks `/effort` overrides for the session's lifetime with the message
+`"CLAUDE_CODE_EFFORT_LEVEL=high overrides this session"`. The CLI flag sets the initial
+level without polluting the env, so `/effort` can change it freely mid-session.
+
+**Session recovery** — `claude --continue` (or `-c`) resumes the most recent conversation
+in the current working directory. Useful for restart-after-crash flows; a future `cs restart`
+command should use this.
+
+**Hardened Runtime** — The Claude Code binary has `com.apple.security.cs.allow-jit` and
+related JIT entitlements but no `get-task-allow`. `lldb` cannot attach. There is no
+OS-level way to modify a running session's environment (e.g. to change effort level) on
+macOS without restarting the process. `tmux set-environment` only affects new
+windows/panes, not running processes.
