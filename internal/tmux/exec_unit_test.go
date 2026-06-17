@@ -88,7 +88,8 @@ func TestExecTmuxClient_NewSession_BuildsCommand(t *testing.T) {
 	assert.Contains(t, newSessionArgs, "new-session")
 	assert.Contains(t, newSessionArgs, "-e")
 	assert.Contains(t, newSessionArgs, "ANTHROPIC_MODEL=opus")
-	assert.Contains(t, newSessionArgs, "CLAUDE_CODE_EFFORT_LEVEL=high")
+	assert.Contains(t, newSessionArgs, "--effort high")
+	assert.NotContains(t, newSessionArgs, "CLAUDE_CODE_EFFORT_LEVEL")
 
 	assert.Equal(t, []string{"set-option", "-t", "my-session", "@cs-model", "opus"}, capturedCalls[1])
 	assert.Equal(t, []string{"set-option", "-t", "my-session", "@cs-effort", "high"}, capturedCalls[2])

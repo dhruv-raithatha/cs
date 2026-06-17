@@ -63,8 +63,7 @@ func (c *execTmuxClient) ListSessions(socketPath string) ([]session.Session, err
 func (c *execTmuxClient) NewSession(socketPath, name, workingDir, model, effort string) error {
 	_, err := runTmux(socketPath, "new-session", "-d", "-s", name, "-c", workingDir,
 		"-e", "ANTHROPIC_MODEL="+model,
-		"-e", "CLAUDE_CODE_EFFORT_LEVEL="+effort,
-		"claude")
+		"claude", "--effort", effort)
 	if err != nil {
 		return fmt.Errorf("new-session %q: %w", name, err)
 	}
