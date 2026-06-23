@@ -6,10 +6,12 @@ INSTALL_DIR = $(HOME)/.local/bin
 
 build:
 	CGO_ENABLED=0 go build -o $(BINARY) $(CMD)
+	@codesign --sign - --force $(BINARY) 2>/dev/null || true
 
 install: build
 	@mkdir -p $(INSTALL_DIR)
 	@cp $(BINARY) $(INSTALL_DIR)/$(BINARY)
+	@codesign --sign - --force $(INSTALL_DIR)/$(BINARY) 2>/dev/null || true
 	@echo "Installed $(BINARY) → $(INSTALL_DIR)/$(BINARY)"
 
 hooks:

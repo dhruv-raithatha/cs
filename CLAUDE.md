@@ -42,6 +42,12 @@ Keep both files in sync when updating the dotfiles config.
 **Install location** — `~/.local/bin/cs`. `cs setup` detects if this is on PATH and offers
 to add it to `~/.zshrc` or `~/.bashrc` based on `$SHELL`.
 
+**macOS 26 code signing** — macOS 26 (Tahoe) tightened `taskgated` enforcement: Go's
+linker-signed adhoc signature is now rejected at launch with `SIGKILL (Code Signature Invalid)`.
+`make build` and `make install` both run `codesign --sign - --force` after copying the binary
+to fix this. The `|| true` makes it a no-op on Linux. Symptom: `cs` exits 137 immediately with
+a crash report in `~/Library/Logs/DiagnosticReports/` citing `Taskgated Invalid Signature`.
+
 ## Pre-commit Hook
 
 Run `make hooks` after clone to install `.githooks/pre-commit`. It runs tests,
